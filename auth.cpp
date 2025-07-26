@@ -1,11 +1,9 @@
+#include "auth.h"
 #include <iostream>
 #include <fstream>
 #include <thread>
 #include <chrono>
 #include <curl/curl.h>
-#include <nlohmann/json.hpp> 
-
-using json = nlohmann::json;
 
 const std::string CLIENT_ID = "59790544-ca0c-4b77-b338-26ff9d1b676f";
 const std::string TENANT_ID = "0fd666e8-0b3d-41ea-a5ef-1c509130bd94";
@@ -23,8 +21,7 @@ json post_request(const std::string& url, const std::string& data) {
     std::string response;
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_slist* headers = nullptr;
-        headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+        curl_slist* headers = curl_slist_append(nullptr, "Content-Type: application/x-www-form-urlencoded");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -41,6 +38,14 @@ void save_tokens(const json& token_data) {
     file.close();
 }
 
+json load_tokens() {
+    std::ifstream file("token.json");
+    if (!file.is_open()) return {};
+    json token_data;
+    file >> token_data;
+    return token_data;
+}
+
 void authenticate() {
     std::string payload = "client_id=" + CLIENT_ID + "&scope=offline_access%20Files.ReadWrite.All";
     json device_resp = post_request(DEVICE_CODE_URL, payload);
@@ -50,10 +55,10 @@ void authenticate() {
     std::string verification_uri = device_resp["verification_uri"];
     int interval = device_resp["interval"];
 
-    std::cout << "🔐 Open the following URL in your browser:\n" << verification_uri << "\n";
-    std::cout << "👉 Enter this code: " << user_code << "\n\n";
+    std::cout << "🔐 Go to: " << verification_uri << "\n";
+    std::cout << "👉 Enter Code: " << user_code << "\n\n";
 
-    // Polling for token
+    // Polling
     std::string poll_payload = "grant_type=urn:ietf:params:oauth:grant-type:device_code"
                                "&client_id=" + CLIENT_ID +
                                "&device_code=" + device_code;
@@ -63,7 +68,7 @@ void authenticate() {
         json token_resp = post_request(TOKEN_URL, poll_payload);
 
         if (token_resp.contains("access_token")) {
-            std::cout << "✅ Authenticated successfully!\n";
+            std::cout << "✅ Authenticated!\n";
             save_tokens(token_resp);
             break;
         }
@@ -77,4 +82,31 @@ void authenticate() {
             }
         }
     }
+}
+
+std::string refresh_access_token() {
+    json tokens = load_tokens();
+    if (!tokens.contains("refresh_token")) return "";
+
+    std::string refresh_token = tokens["refresh_token"];
+    std::string payload = "client_id=" + CLIENT_ID +
+                          "&scope=offline_access%20Files.ReadWrite.All" +
+                          "&refresh_token=" + refresh_token +
+                          "&grant_type=refresh_token";
+
+    json resp = post_request(TOKEN_URL, payload);
+    if (resp.contains("access_token")) {
+        save_tokens(resp);
+        return resp["access_token"];
+    }
+
+    return "";
+}
+
+std::string get_access_token() {
+    json tokens = load_tokens();
+    if (tokens.contains("access_token")) {
+        return tokens["access_token"];
+    }
+    return refresh_access_token();
 }
