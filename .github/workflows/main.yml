@@ -1,0 +1,43 @@
+name: Build OneDrive CLI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v3
+
+    - name: 🛠 Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y curl cmake g++ git build-essential
+
+    - name: 📦 Clone and bootstrap vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        ./vcpkg/bootstrap-vcpkg.sh
+
+    - name: 📚 Install vcpkg packages
+      run: |
+        ./vcpkg/vcpkg install curl
+        ./vcpkg/vcpkg install nlohmann-json
+
+    - name: 🧱 Build project
+      run: |
+        cd onedrivecli
+        rm -rf build
+        mkdir build && cd build
+        cmake .. -DCMAKE_TOOLCHAIN_FILE=../../vcpkg/scripts/buildsystems/vcpkg.cmake
+        cmake --build .
+
+    - name: 📦 Upload built binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: onedrivecli
+        path: onedrivecli/build/onedrivecli
