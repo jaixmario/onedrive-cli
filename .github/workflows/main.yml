@@ -39,4 +39,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: onedrivecli
-        path: path: build/onedrivecli
+        path: build/onedrivecli
