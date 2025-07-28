@@ -13,11 +13,16 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::stri
 
 bool list_drive(const std::string& access_token, std::string& output) {
     CURL* curl = curl_easy_init();
+    output.clear(); 
+
     if (!curl) return false;
 
     curl_easy_setopt(curl, CURLOPT_URL, "https://graph.microsoft.com/v1.0/me/drive/root/children");
+
     struct curl_slist* headers = nullptr;
-    headers = curl_slist_append(headers, ("Authorization: Bearer " + access_token).c_str());
+    std::string auth = "Authorization: Bearer " + access_token;
+    headers = curl_slist_append(headers, auth.c_str());
+
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &output);
@@ -50,6 +55,12 @@ void list_drive_items() {
 
     try {
         json result = json::parse(response);
+
+        if (!result.contains("value")) {
+            std::cerr << "❌ Unexpected API response (missing 'value'):\n" << result.dump(2) << "\n";
+            return;
+        }
+
         std::cout << "\n📁 OneDrive Contents:\n";
         for (const auto& item : result["value"]) {
             std::string name = item["name"];

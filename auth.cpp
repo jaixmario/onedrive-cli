@@ -21,7 +21,8 @@ json post_request(const std::string& url, const std::string& data) {
     std::string response;
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_slist* headers = curl_slist_append(nullptr, "Content-Type: application/x-www-form-urlencoded");
+        curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -29,7 +30,13 @@ json post_request(const std::string& url, const std::string& data) {
         curl_easy_perform(curl);
         curl_easy_cleanup(curl);
     }
-    return json::parse(response);
+
+    try {
+        return json::parse(response);
+    } catch (...) {
+        std::cerr << "❌ Failed to parse API response:\n" << response << "\n";
+        return json::object(); 
+    }
 }
 
 void save_tokens(const json& token_data) {
