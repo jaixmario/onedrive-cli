@@ -57,6 +57,12 @@ void authenticate() {
     std::string payload = "client_id=" + CLIENT_ID + "&scope=offline_access%20Files.ReadWrite.All";
     json device_resp = post_request(DEVICE_CODE_URL, payload);
 
+    if (!device_resp.contains("user_code")) {
+        std::cerr << "❌ Failed to initiate device code flow\n";
+        std::cerr << device_resp.dump(2) << "\n";
+        return;
+    }
+
     std::string user_code = device_resp["user_code"];
     std::string device_code = device_resp["device_code"];
     std::string verification_uri = device_resp["verification_uri"];
@@ -65,7 +71,6 @@ void authenticate() {
     std::cout << "🔐 Go to: " << verification_uri << "\n";
     std::cout << "👉 Enter Code: " << user_code << "\n\n";
 
-    // Polling
     std::string poll_payload = "grant_type=urn:ietf:params:oauth:grant-type:device_code"
                                "&client_id=" + CLIENT_ID +
                                "&device_code=" + device_code;
@@ -83,10 +88,8 @@ void authenticate() {
         if (token_resp.contains("error")) {
             std::string err = token_resp["error"];
             if (err == "authorization_pending") continue;
-            else {
-                std::cerr << "❌ Error: " << err << "\n";
-                break;
-            }
+            std::cerr << "❌ Error: " << err << "\n";
+            break;
         }
     }
 }
@@ -107,12 +110,13 @@ std::string refresh_access_token() {
         return resp["access_token"];
     }
 
+    std::cerr << "❌ Refresh failed: " << resp.dump(2) << "\n";
     return "";
 }
 
 std::string get_access_token() {
     json tokens = load_tokens();
-    if (tokens.contains("access_token")) {
+    if (tokens.contains("access_token") && !tokens["access_token"].get<std::string>().empty()) {
         return tokens["access_token"];
     }
     return refresh_access_token();

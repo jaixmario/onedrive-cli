@@ -12,5 +12,5 @@ endif()
 find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
-add_executable(onedrivecli main.cpp auth.cpp ls.cpp)
+add_executable(onedrivecli main.cpp auth.cpp ls.cpp link.cpp dl.cpp)
 target_link_libraries(onedrivecli PRIVATE CURL::libcurl nlohmann_json::nlohmann_json)
