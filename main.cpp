@@ -3,7 +3,6 @@
 #include "ls.h"
 #include "link.h"
 #include "dl.h"
-#include "explorer.h"
 #include "storage.h"
 
 int main(int argc, char* argv[]) {
@@ -20,19 +19,16 @@ int main(int argc, char* argv[]) {
         } else if (command == "dl" && argc >= 3) {
             generate_download_url(argv[2]);
         } else if (command == "storage") {
-            display_storage_info();
-        } else if (command == "explorer") {
-            run_explorer();
+            show_storage_info();
         } else {
             std::cerr << "❌ Unknown command\n";
         }
     } else {
         std::cout << "Usage:\n";
-        std::cout << "  ./onedrivecli auth           # Login and save tokens\n";
-        std::cout << "  ./onedrivecli ls [path]      # List OneDrive folder contents\n";
-        std::cout << "  ./onedrivecli link [path]    # Generate public share link\n";
-        std::cout << "  ./onedrivecli dl [path]      # Get direct download URL\n";
-        std::cout << "  ./onedrivecli storage        # Show storage usage\n";
-        std::cout << "  ./onedrivecli explorer       # Browse OneDrive folders\n";
+        std::cout << "  ./onedrivecli auth            # Login and save tokens\n";
+        std::cout << "  ./onedrivecli ls [path]       # List OneDrive folder contents\n";
+        std::cout << "  ./onedrivecli link [path]     # Generate public share link\n";
+        std::cout << "  ./onedrivecli dl [path]       # Get direct download URL\n";
+        std::cout << "  ./onedrivecli storage         # Show OneDrive storage usage\n";
     }
 }
